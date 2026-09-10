@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A1 SVO & SVC Tetris Sentence Clear</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f97316;
+            --accent-pink: #ec4899;
+            --accent-purple: #a855f7;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            color: #38bdf8;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 650px;
+            background-color: var(--panel-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        /* Main Game Box / Tetris Well filled with jumbled words */
+        .tetris-well {
+            height: 240px;
+            background: #0f172a;
+            border-radius: 8px;
+            border: 2px solid #334155;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 8px;
+            padding: 12px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .word-tile {
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            transition: transform 0.1s, opacity 0.3s;
+        }
+
+        .word-tile:active {
+            transform: scale(0.95);
+        }
+
+        .word-tile.fade-out {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+
+        /* Shelf / Sentence Construction Zone */
+        .drop-zone {
+            min-height: 70px;
+            background: #0f172a;
+            border: 2px dashed #475569;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .drop-zone-placeholder {
+            color: #64748b;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        /* Color Coding */
+        .type-subject { background-color: var(--accent-green); color: #052e16; }
+        .type-verb { background-color: var(--accent-blue); color: #172554; }
+        .type-object { background-color: var(--accent-orange); color: #431407; }
+        .type-complement { background-color: var(--accent-pink); color: #500724; }
+        .type-extra { background-color: var(--accent-purple); color: #3b0764; }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button.action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button.action-btn:active {
+            opacity: 0.8;
+        }
+
+        #check-btn {
+            background-color: var(--accent-green);
+            color: #052e16;
+        }
+
+        #clear-btn {
+            background-color: #475569;
+            color: #f8fafc;
+        }
+
+        .feedback-msg {
+            text-align: center;
+            font-weight: bold;
+            min-height: 20px;
+            font-size: 0.9rem;
+        }
+
+        .feedback-success { color: var(--accent-green); }
+        .feedback-error { color: #f43f5e; }
+
+        .screen {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #start-screen {
+            text-align: center;
+            padding: 25px 10px;
+        }
+
+        .start-btn {
+            background-color: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>A1 SVO & SVC Tetris Box Clear</h1>
+        <div class="subtitle">Pull words from the game box to the shelf to form valid A1 sentences!</div>
+    </header>
+
+    <div class="game-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <h2>Ready to Clear the Box?</h2>
+            <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">
+                The main box is packed with jumbled A1 words (including distractors). Click words to move them to the shelf. Form valid SVO or SVC sentences to score points and make the correct words disappear!
+            </p>
+            <button class="start-btn" onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- Play Screen -->
+        <div id="play-screen" class="screen hidden">
+            <div class="stats-bar">
+                <span id="score-display">Score: 0 / 10</span>
+                <span id="target-display">Find valid SVO / SVC sentences</span>
+            </div>
+
+            <!-- Main Tetris Game Box with Jumbled Words -->
+            <div class="tetris-well" id="tetris-well" onclick="handleWellClick(event)">
+                <!-- Tiles injected via JS -->
+            </div>
+
+            <!-- Shelf / Construction Zone -->
+            <div class="drop-zone" id="sentence-zone" onclick="handleZoneClick(event)">
+                <span class="drop-zone-placeholder">Click words above to pull them onto the shelf...</span>
+            </div>
+
+            <!-- Feedback Message -->
+            <div class="feedback-msg" id="feedback-msg"></div>
+
+            <!-- Action Buttons -->
+            <div class="actions">
+                <button class="action-btn" id="clear-btn" onclick="clearShelf()">Reset Shelf</button>
+                <button class="action-btn" id="check-btn" onclick="checkAnswer()">Submit Sentence</button>
+            </div>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="end-screen" class="screen hidden" style="text-align: center; padding: 20px;">
+            <h2 id="end-title">Box Cleared!</h2>
+            <p id="end-score-text" style="color: #cbd5e1; margin: 15px 0;"></p>
+            <button class="start-btn" onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Target valid sentences students can make
+        const validSentences = [
+            ["I", "eat", "an", "apple"],
+            ["He", "is", "happy"],
+            ["We", "like", "English"],
+            ["She", "is", "a", "student"],
+            ["Cats", "like", "fish"],
+            ["You", "play", "soccer"],
+            ["They", "read", "books"],
+            ["It", "is", "cold"],
+            ["I", "have", "a", "dog"],
+            ["She", "drinks", "water"]
+        ];
+
+        // Master pool containing all sentence words + extra spare capacity/distractor words
+        let masterPool = [
+            // Sentence 1
+            { id: 1, text: "I", type: "subject" },
+            { id: 2, text: "eat", type: "verb" },
+            { id: 3, text: "an", type: "extra" },
+            { id: 4, text: "apple", type: "object" },
+            // Sentence 2
+            { id: 5, text: "He", type: "subject" },
+            { id: 6, text: "is", type: "verb" },
+            { id: 7, text: "happy", type: "complement" },
+            // Sentence 3
+            { id: 8, text: "We", type: "subject" },
+            { id: 9, text: "like", type: "verb" },
+            { id: 10, text: "English", type: "object" },
+            // Sentence 4
+            { id: 11, text: "She", type: "subject" },
+            { id: 12, text: "is", type: "verb" },
+            { id: 13, text: "a", type: "extra" },
+            { id: 14, text: "student", type: "complement" },
+            // Sentence 5
+            { id: 15, text: "Cats", type: "subject" },
+            { id: 16, text: "like", type: "verb" },
+            { id: 17, text: "fish", type: "object" },
+            // Sentence 6
+            { id: 18, text: "You", type: "subject" },
+            { id: 19, text: "play", type: "verb" },
+            { id: 20, text: "soccer", type: "object" },
+            // Sentence 7
+            { id: 21, text: "They", type: "subject" },
+            { id: 22, text: "read", type: "verb" },
+            { id: 23, text: "books", type: "object" },
+            // Sentence 8
+            { id: 24, text: "It", type: "subject" },
+            { id: 25, text: "is", type: "verb" },
+            { id: 26, text: "cold", type: "complement" },
+            // Sentence 9
+            { id: 27, text: "I", type: "subject" },
+            { id: 28, text: "have", type: "verb" },
+            { id: 29, text: "a", type: "extra" },
+            { id: 30, text: "dog", type: "object" },
+            // Sentence 10
+            { id: 31, text: "She", type: "subject" },
+            { id: 32, text: "drinks", type: "verb" },
+            { id: 33, text: "water", type: "object" },
+            // Extra spare capacity / distractors
+            { id: 34, text: "run", type: "verb" },
+            { id: 35, text: "big", type: "complement" },
+            { id: 36, text: "fast", type: "extra" },
+            { id: 37, text: "milk", type: "object" },
+            { id: 38, text: "dog", type: "subject" },
+            { id: 39, text: "blue", type: "complement" },
+            { id: 40, text: "in", type: "extra" }
+        ];
+
+        let gameBoxTiles = [];
+        let shelfTiles = [];
+        let score = 0;
+        let sentencesFound = 0;
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('play-screen').classList.remove('hidden');
+            score = 0;
+            sentencesFound = 0;
+            // Deep copy and jumble all master pool tiles into the game box
+            gameBoxTiles = [...masterPool].sort(() => Math.random() - 0.5);
+            shelfTiles = [];
+            renderGame();
+        }
+
+        function renderGame() {
+            const wellEl = document.getElementById('tetris-well');
+            const zoneEl = document.getElementById('sentence-zone');
+
+            // Render main game box
+            wellEl.innerHTML = '';
+            if (gameBoxTiles.length === 0) {
+                wellEl.innerHTML = '<span style="color:#64748b; font-size:0.9rem; margin: auto;">Box is empty! Excellent work!</span>';
+            } else {
+                gameBoxTiles.forEach(tile => {
+                    const el = document.createElement('div');
+                    el.className = `word-tile type-${tile.type}`;
+                    el.innerText = tile.text;
+                    el.dataset.id = tile.id;
+                    wellEl.appendChild(el);
+                });
+            }
+
+            // Render shelf zone
+            zoneEl.innerHTML = '';
+            if (shelfTiles.length === 0) {
+                zoneEl.innerHTML = '<span class="drop-zone-placeholder">Click words above to pull them onto the shelf...</span>';
+            } else {
+                shelfTiles.forEach(tile => {
+                    const el = document.createElement('div');
+                    el.className = `word-tile type-${tile.type}`;
+                    el.innerText = tile.text;
+                    el.dataset.id = tile.id;
+                    zoneEl.appendChild(el);
+                });
+            }
+
+            document.getElementById('score-display').innerText = `Score: ${score} / 10`;
+        }
+
+        // Clicking a tile in the game box moves it down to the shelf
+        function handleWellClick(e) {
+            const tileEl = e.target.closest('.word-tile');
+            if (!tileEl) return;
+            const id = parseInt(tileEl.dataset.id);
+
+            const index = gameBoxTiles.findIndex(t => t.id === id);
+            if (index !== -1) {
+                const moved = gameBoxTiles.splice(index, 1)[0];
+                shelfTiles.push(moved);
+                renderGame();
+            }
+        }
+
+        // Clicking a tile on the shelf returns it back to the game box
+        function handleZoneClick(e) {
+            const tileEl = e.target.closest('.word-tile');
+            if (!tileEl) return;
+            const id = parseInt(tileEl.dataset.id);
+
+            const index = shelfTiles.findIndex(t => t.id === id);
+            if (index !== -1) {
+                const moved = shelfTiles.splice(index, 1)[0];
+                gameBoxTiles.push(moved);
+                renderGame();
+            }
+        }
+
+        function clearShelf() {
+            gameBoxTiles = [...gameBoxTiles, ...shelfTiles];
+            shelfTiles = [];
+            renderGame();
+            document.getElementById('feedback-msg').innerText = '';
+        }
+
+        function checkAnswer() {
+            const feedbackEl = document.getElementById('feedback-msg');
+            const userWords = shelfTiles.map(t => t.text);
+            const userString = userWords.join(' ');
+
+            // Check if user string matches any valid sentence
+            let matchedIndex = -1;
+            for (let i = 0; i < validSentences.length; i++) {
+                if (validSentences[i].join(' ') === userString) {
+                    matchedIndex = i;
+                    break;
+                }
+            }
+
+            if (matchedIndex !== -1) {
+                score += 1;
+                sentencesFound++;
+                feedbackEl.innerText = `Correct! "${userString}" (+1 Point)`;
+                feedbackEl.className = "feedback-msg feedback-success";
+
+                // Permanently remove the correctly used tiles from shelf (they disappear completely)
+                shelfTiles = [];
+
+                renderGame();
+
+                if (sentencesFound >= 10 || gameBoxTiles.length === 0) {
+                    setTimeout(showWinScreen, 800);
+                }
+            } else {
+                feedbackEl.innerText = "Not a valid SVO or SVC sentence. Try a different order or return words!";
+                feedbackEl.className = "feedback-msg feedback-error";
+            }
+        }
+
+        function showWinScreen() {
+            document.getElementById('play-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('end-title').innerText = "Awesome Job!";
+            document.getElementById('end-score-text').innerText = `You successfully formed ${sentencesFound} valid sentences and scored ${score} points!`;
+        }
+
+        function resetGame() {
+            startGame();
+        }
+    </script>
+</body>
+</html>
